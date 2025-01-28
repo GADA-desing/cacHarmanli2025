@@ -3,10 +3,10 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // Порът може да бъде зададен от Render
 
 // Проверка дали директорията за временни файлове съществува
-const tempDir = 'uploads/temp/';
+const tempDir = path.join(__dirname, 'uploads', 'temp');
 if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
 }
@@ -24,6 +24,7 @@ const upload = multer({ storage: tempStorage });
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); // Добавяне на middleware за JSON данни
 
 // Функция за намиране на следващия свободен номер за папка
 function getNextFolderNumber() {
