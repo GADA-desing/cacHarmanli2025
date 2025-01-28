@@ -2,15 +2,15 @@ const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const cloudinary = require('cloudinary').v2;  // Добавяме cloudinary
+const cloudinary = require('cloudinary').v2;  // Добавяне на Cloudinary
 const app = express();
 const port = 3000;
 
-// Конфигуриране на Cloudinary
+// Конфигуриране на Cloudinary с данните от Environment Variables
 cloudinary.config({
-  cloud_name: 'dhhlacol1',  // Cloud Name
-  api_key: '359592344316647',  // API Key
-  api_secret: 'd9LIHVmoBnqXqPRnJYkEs-vqjv8'  // API Secret
+  cloud_name: process.env.CLOUD_NAME,  // Използване на ENV променливи за Cloudinary
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET
 });
 
 // Проверка дали директорията за временни файлове съществува
