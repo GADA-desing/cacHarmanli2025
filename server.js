@@ -15,23 +15,17 @@ cloudinary.config({
   api_secret: 'd9LIHVmoBnqXqPRnJYkEs-vqjv8'   // Заменете с вашия API секрет
 });
 
-// Проверка дали директорията за временни файлове съществува
-const tempDir = path.join(__dirname, 'uploads', 'temp');
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
-}
-
-// Конфигурация на multer за качване на файлове във временна папка
-const tempStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, tempDir);  // Пътят към временната директория
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
+// Конфигурация на Multer за качване директно в Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'submissions',  // Папката, в която ще качвате файловете
+    allowedFormats: ['jpg', 'jpeg', 'png'],  // Формати, които ще се качват
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]  // Преобразувания за изображенията
   }
 });
 
-const upload = multer({ storage: tempStorage });
+const upload = multer({ storage: storage });
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
@@ -91,62 +85,24 @@ app.post('/submit', upload.fields([{ name: 'pedigree', maxCount: 1 }, { name: 'p
     fs.mkdirSync(ownerDir, { recursive: true });
   }
 
-  // Преместване на файловете в папката на собственика
-  Object.keys(files).forEach(key => {
-    files[key].forEach(file => {
-      const tempPath = path.join(__dirname, file.path);
-      const newFilePath = getUniqueFileName(ownerDir, file.originalname);
-
-      // Преместване на файла
-      try {
-        fs.renameSync(tempPath, newFilePath);
-      } catch (err) {
-        console.error('Error moving file:', err);
-      }
-    });
-  });
-
-  // Подготовка за качване на файлове в Cloudinary
-  const uploadPromises = [];
-  
-  Object.keys(files).forEach(key => {
-    files[key].forEach(file => {
-      const filePath = path.join(__dirname, file.path);
-      
-      // Качване в Cloudinary
-      const uploadPromise = cloudinary.uploader.upload(filePath, {
-        folder: `submissions/${folderNumber}.${owner}/`,  // Папка за съхранение в Cloudinary
-        public_id: file.originalname.split('.')[0],    // Публично ID на файла
-        resource_type: 'auto'  // Автоматично откриване на типа на ресурса
-      }).then(result => {
-        // След успешното качване, изтриваме локалния файл
-        fs.unlinkSync(filePath); // Изтриваме локалния файл
-        return result;
-      }).catch(err => {
-        console.error('Error uploading to Cloudinary:', err);
-      });
-
-      uploadPromises.push(uploadPromise);
-    });
-  });
-
-  // Изчакваме всички качвания да завършат
-  try {
-    const uploadResults = await Promise.all(uploadPromises);
-    console.log('All files uploaded to Cloudinary:', uploadResults);
-  } catch (err) {
-    console.error('Error uploading files:', err);
-    return res.status(500).send('Error uploading files to Cloudinary.');
-  }
-
-  // Съхраняване на информацията в JSON файл в папката на собственика
+  // Записване на линковете към Cloudinary в подадената информация
   const submission = {
     formData: formData,
-    files: files
+    files: {}
   };
 
-  let jsonPath = path.join(ownerDir, `${owner}.json`);
-  jsonPath = getUniqueFileName(ownerDir, `${owner}.json`);
+  // За всяко качено изображение
+  Object.keys(files).forEach(key => {
+    files[key].forEach(file => {
+      submission.files[key] = {
+        secure_url: file.path,  // Линк към каченото изображение в Cloudinary
+        originalname: file.originalname  // Името на файла
+      };
+    });
+  });
+
+  // Съхраняване на информацията в JSON файл в папката на собственика
+  const jsonPath = getUniqueFileName(ownerDir, `${owner}.json`);
 
   fs.writeFile(jsonPath, JSON.stringify(submission, null, 2), (err) => {
     if (err) {
