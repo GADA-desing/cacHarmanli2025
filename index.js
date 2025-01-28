@@ -2,16 +2,8 @@ const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const cloudinary = require('cloudinary').v2;  // Добавяне на Cloudinary
 const app = express();
 const port = 3000;
-
-// Конфигуриране на Cloudinary с данните от Environment Variables
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,  // Използване на ENV променливи за Cloudinary
-  api_key: process.env.API_KEY,
-  api_secret: process.env.API_SECRET
-});
 
 // Проверка дали директорията за временни файлове съществува
 const tempDir = 'uploads/temp/';
@@ -95,51 +87,52 @@ app.post('/submit', upload.fields([{ name: 'pedigree', maxCount: 1 }, { name: 'p
     console.log(`Created directory for owner: ${ownerDir}`);
   }
 
-  // Преместване на файловете в Cloudinary и запазване на URL адреса
-  const uploadPromises = Object.keys(files).map(key => {
-    return Promise.all(files[key].map(file => {
-      return new Promise((resolve, reject) => {
-        cloudinary.uploader.upload(file.path, { 
-          public_id: `${ownerDir}/${file.originalname}`, // Път в Cloudinary
-          resource_type: "auto" // За автоматично разпознаване на типа (изображение, видео и т.н.)
-        }, (error, result) => {
-          if (error) {
-            reject(error);
-          } else {
-            console.log(`File uploaded to Cloudinary: ${result.secure_url}`);
-            resolve(result.secure_url); // Записваме URL адреса на каченото в Cloudinary
-          }
-        });
-      });
-    }));
-  });
+  // Преместване на файловете в папката на собственика, като добавяме суфикс при конфликт
+  Object.keys(files).forEach(key => {
+    files[key].forEach(file => {
+      const tempPath = path.join(__dirname, file.path);
+      const newFilePath = getUniqueFileName(ownerDir, file.originalname);
 
-  // Изчакваме всички качвания да завършат
-  Promise.all(uploadPromises.flat()).then((fileUrls) => {
-    // Съхраняване на информацията в JSON файл в папката на собственика
-    const submission = {
-      formData: formData,
-      files: fileUrls
-    };
+      // Лог за изходния път и целевия път
+      console.log(`Moving file: ${tempPath} -> ${newFilePath}`);
 
-    // Генериране на уникален JSON файл
-    let jsonPath = path.join(ownerDir, `${owner}.json`);
-    jsonPath = getUniqueFileName(ownerDir, `${owner}.json`);
+      // Проверка дали целевата директория съществува, ако не - създаване на директорията
+      const targetDir = path.dirname(newFilePath);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });  // Създава целевата директория, ако не съществува
+        console.log(`Created target directory: ${targetDir}`);
+      }
 
-    console.log(`Saving submission to: ${jsonPath}`);
-
-    fs.writeFile(jsonPath, JSON.stringify(submission, null, 2), (err) => {
-      if (err) {
-        console.error('Error saving submission:', err);
-        res.status(500).send('Error saving submission');
-      } else {
-        console.log('Submission saved successfully');
-        res.send('Вашата заявка беше изпратена успешно!');
+      // Преместване на файла
+      try {
+        fs.renameSync(tempPath, newFilePath);
+        console.log(`File moved successfully: ${newFilePath}`);
+      } catch (err) {
+        console.error('Error moving file:', err);
       }
     });
-  }).catch((err) => {
-    console.error('Error uploading files to Cloudinary:', err);
-    res.status(500).send('Error uploading files');
+  });
+
+  // Съхраняване на информацията в JSON файл в папката на собственика
+  const submission = {
+    formData: formData,
+    files: files
+  };
+
+  // Генериране на уникален JSON файл
+  let jsonPath = path.join(ownerDir, `${owner}.json`);
+  jsonPath = getUniqueFileName(ownerDir, `${owner}.json`);
+
+  console.log(`Saving submission to: ${jsonPath}`);
+
+  fs.writeFile(jsonPath, JSON.stringify(submission, null, 2), (err) => {
+    if (err) {
+      console.error('Error saving submission:', err);
+      res.status(500).send('Error saving submission');
+    } else {
+      console.log('Submission saved successfully');
+      res.send('Вашата заявка беше изпратена успешно!');
+    }
   });
 });
 
