@@ -34,7 +34,7 @@ const tempStorage = multer.diskStorage({
 const upload = multer({ storage: tempStorage });
 
 // Конфигуриране на CloudinaryStorage за качване директно в Cloudinary
-const storage = new CloudinaryStorage({
+const storage = CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'submissions',  // Папка за съхранение в Cloudinary
