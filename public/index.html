@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2xCAC Harmanli 2025</title>
+    <title>CAC Harmanli 06.04.2025</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,11 +16,19 @@
             color: #333;
             font-size: 24px;
             text-transform: uppercase;
+            margin-top: 60px;
         }
         h2 {
             text-align: center;
             color: #666;
             font-size: 18px;
+        }
+        .subheading {
+            text-align: center;
+            color: #777;
+            font-size: 16px;
+            margin-top: 5px;
+            font-weight: bold;
         }
         form {
             background-color: #fff;
@@ -48,7 +56,6 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-            display: block;
         }
         input[type="submit"] {
             background-color: #4CAF50;
@@ -58,50 +65,92 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            display: block;
+            margin: 0 auto;
         }
         input[type="submit"]:hover {
             background-color: #45a049;
         }
-        .logo {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 150px; /* Променете размера на логото тук */
-            height: auto;
+        /* Media Queries за мобилни устройства */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 20px;
+            }
+            h2 {
+                font-size: 16px;
+            }
+            .subheading {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
-    <img src="Logo/logo.jpg" alt="logo" class="logo">
-    <h1>КУПАТА НА БЕЛОНОГАТА</h1>
-    <h2>CAC Харманли 06.04.25</h2>
-    <form action="/submit" method="post" enctype="multipart/form-data">
-        <label for="breed">ПОРОДА *</label>
-        <input type="text" id="breed" name="breed" required>
+    <img src="Logo/logo.jpg" alt="logo" class="logo" style="display: block; margin: 0 auto; max-width: 150px; height: auto;">
+    <h1>КИНОЛОЖКО ДРУЖЕСТВО ХАРМАНЛИ</h1>
+    <h2>CAC Харманли 06.04.2025</h2>
+    <div class="subheading">Заявка за участие</div>
 
-        <label for="name">ИМЕ *</label>
+    <form id="registrationForm" action="/submit" method="post" enctype="multipart/form-data">
+        <h2>Данни на собственика</h2>
+
+        <label for="ownerName">Име и фамилия *</label>
+        <input type="text" id="ownerName" name="owner" required>
+
+        <label for="email">E-mail *</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="address">Адрес (не е задължителен)</label>
+        <input type="text" id="address" name="address">
+
+        <label for="phone">Телефон *</label>
+        <input type="tel" id="phone" name="phone" required>
+
+        <h2>Данни на кучето</h2>
+
+        <label for="name">Име на кучето *</label>
         <input type="text" id="name" name="name" required>
 
-        <label for="regnumber">№ ПЛЕМЕННА КНИГА *</label>
+        <label for="breed">Порода *</label>
+        <input type="text" id="breed" name="breed" required>
+
+        <label for="sex">Пол *</label>
+        <select id="sex" name="sex" required>
+            <option value="" disabled selected>---избор---</option>
+            <option value="male">Мъжки</option>
+            <option value="female">Женски</option>
+        </select>
+
+        <label for="color">Цвят *</label>
+        <input type="text" id="color" name="color" required>
+
+        <label for="variety">Разновидност (не е задължителна)</label>
+        <input type="text" id="variety" name="variety">
+
+        <label for="father">Баща *</label>
+        <input type="text" id="father" name="father" required>
+
+        <label for="mother">Майка *</label>
+        <input type="text" id="mother" name="mother" required>
+
+        <label for="regnumber">№ Племенна книга *</label>
         <input type="text" id="regnumber" name="regnumber" required>
 
-        <label for="microchip">№ МИКРОЧИП *</label>
+        <label for="microchip">№ Микрочип *</label>
         <input type="text" id="microchip" name="microchip" required>
 
-        <label for="pedigree">РОДОСЛОВИЕ *</label>
-        <input type="file" id="pedigree" name="pedigree" required>
+        <label for="pedigree">Родословие *</label>
+        <input type="file" id="pedigree" name="pedigree" accept="image/*" required>
 
-        <label for="breeder">РАЗВЪДНИК *</label>
+        <label for="breeder">Производител *</label>
         <input type="text" id="breeder" name="breeder" required>
 
-        <label for="birthdate">ДАТА НА РАЖДАНЕ *</label>
+        <label for="birthdate">Дата на раждане *</label>
         <input type="date" id="birthdate" name="birthdate" required>
-
-        <label for="sex">ПОЛ *</label>
-        <input type="text" id="sex" name="sex" required>
 
         <label for="class">Клас *</label>
         <select id="class" name="class" required>
+            <option value="" disabled selected>---избор---</option>
             <option value="baby">Бебе (от 3 до 6 месеца)</option>
             <option value="puppy">Подрастващи (от 6 до 9 месеца)</option>
             <option value="junior">Млади (от 9 до 18 месеца)</option>
@@ -112,28 +161,10 @@
             <option value="veteran">Ветерани (Над 8 години)</option>
         </select>
 
-        <label for="father">БАЩА *</label>
-        <input type="text" id="father" name="father" required>
-
-        <label for="mother">МАЙКА *</label>
-        <input type="text" id="mother" name="mother" required>
-
-        <label for="owner">СОБСТВЕНИК *</label>
-        <input type="text" id="owner" name="owner" required>
-
-        <label for="address">АДРЕС *</label>
-        <input type="text" id="address" name="address" required>
-
-        <label for="email">E-MAIL *</label>
-        <input type="email" id="email" name="email" required>
-
-        <label for="phone">ТЕЛЕФОН *</label>
-        <input type="tel" id="phone" name="phone" required>
-
         <label for="payment">СНИМКА ОТ НАЛОЖЕН ПЛАТЕЖ *</label>
-        <input type="file" id="payment" name="payment" required>
+        <input type="file" id="payment" name="payment" accept="image/*" required>
 
-        <input type="submit" value="Submit">
+        <input type="submit" value="Заявка за участие">
     </form>
 </body>
 </html>
