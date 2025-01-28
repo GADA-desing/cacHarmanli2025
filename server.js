@@ -1,3 +1,17 @@
+const express = require('express');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const cloudinary = require('cloudinary').v2;  // Добавено Cloudinary
+
+const app = express();  // Създаване на express приложение
+const port = process.env.PORT || 3000; // Порът може да бъде зададен от Render
+
+// Вашата настройка на multer и останалата част от кода продължават тук...
+
+
+
+
 app.post('/submit', upload.fields([{ name: 'pedigree', maxCount: 1 }, { name: 'payment', maxCount: 1 }]), (req, res) => {
   const formData = req.body;
   const files = req.files;
