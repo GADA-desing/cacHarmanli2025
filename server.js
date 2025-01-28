@@ -3,7 +3,7 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const cloudinary = require('cloudinary').v2; // за Cloudinary
-const CloudinaryStorage = require('multer-storage-cloudinary').CloudinaryStorage; // поправено импортиране
+const { CloudinaryStorage } = require('multer-storage-cloudinary'); // Поправено импортиране
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -34,7 +34,7 @@ const tempStorage = multer.diskStorage({
 const upload = multer({ storage: tempStorage });
 
 // Конфигуриране на CloudinaryStorage за качване директно в Cloudinary
-const storage = new CloudinaryStorage({
+const storage = CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'submissions',  // Папка за съхранение в Cloudinary
