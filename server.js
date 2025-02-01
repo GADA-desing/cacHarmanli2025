@@ -72,11 +72,19 @@ app.post('/submit', uploadCloudinary.fields([
     const formData = req.body;
     const files = req.files;
 
-    // Добавяме лог за проверка на получените данни
+    // Добавяме повече логове
     console.log('Получени данни:', formData);
+    console.log('Получени файлове:', files);
 
     // Валидация
     if (!formData.owner || !formData.email || !formData.phone || !files?.pedigree || !files?.payment) {
+      console.log('Липсващи задължителни полета:', {
+        owner: !formData.owner,
+        email: !formData.email,
+        phone: !formData.phone,
+        pedigree: !files?.pedigree,
+        payment: !files?.payment
+      });
       return res.status(400).send('Всички полета са задължителни!');
     }
 
@@ -211,7 +219,12 @@ E-mail: ${formData.email}
     res.send('Данните са изпратени успешно! ✅');
 
   } catch (error) {
-    console.error('Грешка:', error);
+    // Подробно логване на грешката
+    console.error('Детайли за грешката:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).send('Грешка при обработка на заявката');
   }
 });
