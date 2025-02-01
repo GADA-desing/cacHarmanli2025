@@ -267,8 +267,8 @@
         }
     </style>
     <script>
-        // Променяме съобщението за задължително поле на български
         document.addEventListener('DOMContentLoaded', function() {
+            // Съществуващ код за валидация
             const inputs = document.querySelectorAll('input[required], select[required]');
             inputs.forEach(input => {
                 input.oninvalid = function(e) {
@@ -281,6 +281,11 @@
                     e.target.setCustomValidity("");
                 };
             });
+
+            // Добавяме ограничение за датата
+            const birthdateInput = document.getElementById('birthdate');
+            const today = new Date().toISOString().split('T')[0];
+            birthdateInput.setAttribute('max', today);
         });
     </script>
 </head>
