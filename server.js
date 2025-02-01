@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const fetch = require('node-fetch');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -229,6 +230,25 @@ E-mail: ${formData.email}
   }
 });
 
+// Функция за поддържане на сървъра активен
+function keepAlive() {
+    app.get('/ping', (req, res) => {
+        res.send('pong');
+    });
+
+    // Изпращаме ping на всеки 14 минути
+    setInterval(() => {
+        const https = require('https');
+        https.get('https://your-render-url.onrender.com/ping', (resp) => {
+            resp.on('data', () => {});
+            resp.on('end', () => console.log('Ping успешен'));
+        }).on('error', (err) => {
+            console.log('Ping грешка:', err.message);
+        });
+    }, 14 * 60 * 1000);
+}
+
 app.listen(port, () => {
-  console.log(`Сървърът работи на http://localhost:${port}`);
+    console.log(`Сървърът работи на http://localhost:${port}`);
+    keepAlive(); // Стартираме функцията за поддържане на активност
 });
