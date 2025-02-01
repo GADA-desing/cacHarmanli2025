@@ -2,43 +2,58 @@ const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const cloudinary = require('cloudinary').v2; // за Cloudinary
-const { CloudinaryStorage } = require('multer-storage-cloudinary'); // Поправено импортиране
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Настройка на Cloudinary с вашите креденциали
+// Cloudinary конфигурация
 cloudinary.config({
-  cloud_name: 'dhhlacol1',  // Заменете с вашето име на облак
-  api_key: '359592344316647',        // Заменете с вашия API ключ
-  api_secret: 'd9LIHVmoBnqXqPRnJYkEs-vqjv8'   // Заменете с вашия API секрет
+  cloud_name: 'dhhlacol1',
+  api_key: '359592344316647',
+  api_secret: 'd9LIHVmoBnqXqPRnJYkEs-vqjv8'
 });
 
-// Проверка дали директорията за временни файлове съществува
-const tempDir = path.join(__dirname, 'uploads', 'temp');
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
+// Функция за намиране на следващия номер на папка
+async function getNextFolderNumber() {
+  try {
+    // Извличане на всички подпапки в "submissions" от Cloudinary
+    const result = await cloudinary.api.sub_folders('submissions');
+    const folders = result.folders.map(folder => folder.name);
+
+    // Филтриране на папките с формат "число.име"
+    const numbers = folders
+      .map(name => {
+        const match = name.match(/^(\d+)\./); // Взима числото преди първата точка
+        return match ? parseInt(match[1]) : 0;
+      })
+      .filter(num => !isNaN(num) && num > 0);
+
+    // Ако няма папки, започваме от 1
+    return numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+  } catch (error) {
+    console.error('Грешка при извличане на папки:', error);
+    return 1; // Ако има грешка, започваме от 1
+  }
 }
 
-// Конфигурация на multer за качване на файлове във временна папка
-const tempStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, tempDir);  // Пътят към временната директория
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  }
-});
-
-const upload = multer({ storage: tempStorage });
-
-// Конфигуриране на CloudinaryStorage за качване директно в Cloudinary
-const storage = CloudinaryStorage({
+// Конфигурация за Cloudinary Storage
+const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'submissions',  // Папка за съхранение в Cloudinary
-    allowed_formats: ['jpg', 'png', 'jpeg', 'pdf'],
+  params: async (req, file) => {
+    // Запазваме номера на папката в req обекта, за да го използваме за всички файлове
+    if (!req.folderNumber) {
+      req.folderNumber = await getNextFolderNumber();
+    }
+    const owner = req.body.owner.trim().replace(/\s+/g, '_');
+    const folder = `submissions/${req.folderNumber}.${owner}`;
+
+    return {
+      folder: folder,
+      allowed_formats: ['jpg', 'png', 'jpeg', 'pdf'],
+      public_id: `${Date.now()}-${path.parse(file.originalname).name}`,
+    };
   },
 });
 
@@ -48,113 +63,159 @@ app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Функция за намиране на следващия свободен номер за папка
-function getNextFolderNumber() {
-  const submissionsDir = path.join(__dirname, 'submissions');
-  const existingDirs = fs.readdirSync(submissionsDir).filter(item => fs.statSync(path.join(submissionsDir, item)).isDirectory());
-  let maxNumber = 0;
-
-  existingDirs.forEach(dir => {
-    const number = parseInt(dir.split('.')[0]);
-    if (!isNaN(number) && number > maxNumber) {
-      maxNumber = number;
-    }
-  });
-
-  return maxNumber + 1;
-}
-
-function getUniqueFileName(ownerDir, fileName) {
-  let newPath = path.join(ownerDir, fileName);
-  let count = 1;
-
-  while (fs.existsSync(newPath)) {
-    const extname = path.extname(fileName);
-    const basename = path.basename(fileName, extname);
-    newPath = path.join(ownerDir, `${basename}_${count}${extname}`);
-    count++;
-  }
-
-  return newPath;
-}
-
-app.post('/submit', upload.fields([{ name: 'pedigree', maxCount: 1 }, { name: 'payment', maxCount: 1 }]), async (req, res) => {
-  const formData = req.body;
-  const files = req.files;
-
-  // Проверка за липсващи полета
-  if (
-    !formData.owner || 
-    !formData.email || 
-    !formData.phone || 
-    !files || 
-    !files.pedigree || 
-    !files.payment
-  ) {
-    return res.status(400).send('Всички задължителни полета трябва да бъдат попълнени и файловете качени.');
-  }
-
-  const owner = formData.owner.trim().replace(/\s+/g, '_');
-  const folderNumber = getNextFolderNumber();
-  const ownerDir = path.join(__dirname, 'submissions', `${folderNumber}.${owner}`);
-
-  if (!fs.existsSync(ownerDir)) {
-    fs.mkdirSync(ownerDir, { recursive: true });
-  }
-
-  // Подготовка за качване на файлове в Cloudinary
-  const uploadPromises = [];
-
-  Object.keys(files).forEach(key => {
-    files[key].forEach(file => {
-      const filePath = path.join(__dirname, file.path);
-      
-      // Качване в Cloudinary
-      const uploadPromise = cloudinary.uploader.upload(filePath, {
-        folder: `submissions/${folderNumber}.${owner}/`,  // Папка за съхранение в Cloudinary
-        public_id: file.originalname.split('.')[0],    // Публично ID на файла
-        resource_type: 'auto'  // Автоматично откриване на типа на ресурса
-      }).then(result => {
-        // След успешното качване, изтриваме локалния файл
-        fs.unlinkSync(filePath); // Изтриваме локалния файл
-        return result;
-      }).catch(err => {
-        console.error('Error uploading to Cloudinary:', err);
-      });
-
-      uploadPromises.push(uploadPromise);
-    });
-  });
-
-  // Изчакваме всички качвания да завършат
+// Маршрут за обработка на формата
+app.post('/submit', uploadCloudinary.fields([
+  { name: 'pedigree', maxCount: 1 },
+  { name: 'payment', maxCount: 1 }
+]), async (req, res) => {
   try {
-    const uploadResults = await Promise.all(uploadPromises);
-    console.log('All files uploaded to Cloudinary:', uploadResults);
-  } catch (err) {
-    console.error('Error uploading files:', err);
-    return res.status(500).send('Error uploading files to Cloudinary.');
-  }
+    const formData = req.body;
+    const files = req.files;
 
-  // Съхраняване на информацията в JSON файл в папката на собственика
-  const submission = {
-    formData: formData,
-    files: files
-  };
+    // Добавяме лог за проверка на получените данни
+    console.log('Получени данни:', formData);
 
-  let jsonPath = path.join(ownerDir, `${owner}.json`);
-  jsonPath = getUniqueFileName(ownerDir, `${owner}.json`);
-
-  fs.writeFile(jsonPath, JSON.stringify(submission, null, 2), (err) => {
-    if (err) {
-      console.error('Error saving submission:', err);
-      res.status(500).send('Error saving submission');
-    } else {
-      console.log('Submission saved successfully');
-      res.send('Вашата заявка беше изпратена успешно!');
+    // Валидация
+    if (!formData.owner || !formData.email || !formData.phone || !files?.pedigree || !files?.payment) {
+      return res.status(400).send('Всички полета са задължителни!');
     }
-  });
+
+    const owner = formData.owner.trim().replace(/\s+/g, '_');
+    const cloudinaryFolder = `submissions/${req.folderNumber}.${owner}`;
+
+    // Използваме правилните имена на полетата от формата
+    const dogName = formData.name || '';
+    
+    // Форматиране на датата
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('bg-BG', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit'
+      });
+    };
+    const birthDate = formatDate(formData.birthdate);
+    
+    // Превод на пола
+    const gender = formData.sex === 'male' ? 'Мъжки' : 
+                  formData.sex === 'female' ? 'Женски' : '';
+    
+    // Превод на класа
+    const classTranslations = {
+      'baby': 'Бебе (от 3 до 6 месеца)',
+      'puppy': 'Подрастващи (от 6 до 9 месеца)',
+      'junior': 'Млади (от 9 до 18 месеца)',
+      'intermedia': 'Междинен (от 15 до 24 месеца)',
+      'open': 'Отворен (над 15 месеца)',
+      'working': 'Работен (над 15 месеца)',
+      'champion': 'Шампион (над 15 месеца)',
+      'veteran': 'Ветерани (Над 8 години)'
+    };
+    const dogClass = classTranslations[formData.class] || '';
+    
+    const color = formData.color || '';
+    const variety = formData.variety || '';
+    const father = formData.father || '';
+    const mother = formData.mother || '';
+    const regnumber = formData.regnumber || '';
+    const microchip = formData.microchip || '';
+    const breeder = formData.breeder || '';
+    const address = formData.address || '';
+
+    // Създаване на текстово съдържание
+    const textContent = `
+ДАННИ НА СОБСТВЕНИКА
+-------------------
+Име и фамилия: ${formData.owner}
+E-mail: ${formData.email}
+Телефон: ${formData.phone}
+Адрес: ${address}
+
+ДАННИ НА КУЧЕТО
+--------------
+Име на кучето: ${dogName}
+Порода: ${formData.breed}
+Пол: ${gender}
+Цвят: ${color}
+Разновидност: ${variety}
+Баща: ${father}
+Майка: ${mother}
+№ Племенна книга: ${regnumber}
+№ Микрочип: ${microchip}
+Производител: ${breeder}
+Клас: ${dogClass}
+Дата на раждане: ${birthDate}
+
+ПРИКАЧЕНИ ФАЙЛОВЕ
+----------------
+Родословие: ${files.pedigree[0].path}
+Платежен документ: ${files.payment[0].path}
+    `.trim();
+
+    // Записване на временен текстов файл
+    const txtPath = path.join(__dirname, 'temp.txt');
+    fs.writeFileSync(txtPath, textContent, 'utf8');
+
+    // Качване на текстовия файл в Cloudinary
+    const txtUpload = await cloudinary.uploader.upload(txtPath, {
+      folder: cloudinaryFolder,
+      resource_type: 'raw',
+      public_id: `${owner}_data.txt`
+    });
+
+    // Изтриване на временния текстов файл
+    fs.unlinkSync(txtPath);
+
+    // Обновяваме и JSON структурата
+    const submission = {
+      "Данни на собственика": {
+        "Име и фамилия": formData.owner,
+        "E-mail": formData.email,
+        "Телефон": formData.phone,
+        "Адрес": address
+      },
+      "Данни на кучето": {
+        "Име на кучето": dogName,
+        "Порода": formData.breed,
+        "Пол": gender,
+        "Цвят": color,
+        "Разновидност": variety,
+        "Баща": father,
+        "Майка": mother,
+        "№ Племенна книга": regnumber,
+        "№ Микрочип": microchip,
+        "Производител": breeder,
+        "Клас": dogClass,
+        "Дата на раждане": birthDate
+      },
+      "Прикачени файлове": {
+        "Родословие": files.pedigree[0].path,
+        "Платежен документ": files.payment[0].path
+      }
+    };
+
+    const jsonPath = path.join(__dirname, 'temp.json');
+    fs.writeFileSync(jsonPath, JSON.stringify(submission, null, 2));
+
+    const jsonUpload = await cloudinary.uploader.upload(jsonPath, {
+      folder: cloudinaryFolder,
+      resource_type: 'auto',
+      public_id: `${owner}_data`
+    });
+
+    fs.unlinkSync(jsonPath);
+
+    console.log('Успешно качени файлове в:', cloudinaryFolder);
+    res.send('Данните са изпратени успешно! ✅');
+
+  } catch (error) {
+    console.error('Грешка:', error);
+    res.status(500).send('Грешка при обработка на заявката');
+  }
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Сървърът работи на http://localhost:${port}`);
 });
