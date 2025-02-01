@@ -221,6 +221,7 @@ E-mail: ${formData.email}
       <html>
         <head>
           <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
             .success-message {
               position: fixed;
@@ -229,10 +230,20 @@ E-mail: ${formData.email}
               transform: translate(-50%, -50%);
               background: rgba(39, 174, 96, 0.9);
               color: white;
-              padding: 20px;
+              padding: 30px;
               border-radius: 8px;
               text-align: center;
               font-family: Arial, sans-serif;
+              font-size: 24px;
+              width: 90%;
+              max-width: 400px;
+              box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            }
+            @media (max-width: 480px) {
+              .success-message {
+                font-size: 20px;
+                padding: 20px;
+              }
             }
           </style>
         </head>
