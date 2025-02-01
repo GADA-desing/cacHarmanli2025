@@ -5,166 +5,340 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAC Harmanli 06.04.2025</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #27ae60;
+            --background-color: #ecf0f1;
+            --form-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
             padding: 20px;
         }
-        h1 {
-            text-align: center;
-            color: #333;
-            font-size: 24px;
-            text-transform: uppercase;
-            margin-top: 60px;
-        }
-        h2 {
-            text-align: center;
-            color: #666;
-            font-size: 18px;
-        }
-        .subheading {
-            text-align: center;
-            color: #777;
-            font-size: 16px;
-            margin-top: 5px;
-            font-weight: bold;
-        }
-        form {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
+
+        .container {
+            max-width: 800px;
             margin: 0 auto;
-            border: 2px solid #4CAF50;
+            padding: 20px;
         }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            max-width: 180px;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            font-size: 22px;
+            margin: 25px 0 15px 0;
+        }
+
+        .subheading {
+            color: var(--secondary-color);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 30px;
+        }
+
+        form {
+            background-color: var(--form-background);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
         label {
             display: block;
-            margin-bottom: 10px;
-            color: #555;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary-color);
         }
+
         input[type="text"],
-        input[type="date"],
         input[type="email"],
         input[type="tel"],
-        input[type="file"],
+        input[type="date"],
         select {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        input[type="submit"] {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
             font-size: 16px;
-            display: block;
-            margin: 0 auto;
+            transition: border-color 0.3s ease;
         }
-        input[type="submit"]:hover {
-            background-color: #45a049;
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 2px dashed #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
         }
-        /* Media Queries за мобилни устройства */
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
+        .required-field::after {
+            content: ' *';
+            color: #e74c3c;
+        }
+
+        .submit-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: #219a52;
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            form {
+                padding: 20px;
+            }
+
+            .form-section {
+                padding: 15px;
+            }
+
+            input[type="text"],
+            input[type="email"],
+            input[type="tel"],
+            input[type="date"],
+            select {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
             h1 {
                 font-size: 20px;
             }
+
             h2 {
+                font-size: 18px;
+            }
+
+            .subheading {
                 font-size: 16px;
             }
-            .subheading {
-                font-size: 14px;
+
+            .form-section {
+                padding: 10px;
             }
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-section {
+            animation: fadeIn 0.5s ease-out;
         }
     </style>
 </head>
 <body>
-    <img src="Logo/logo.jpg" alt="logo" class="logo" style="display: block; margin: 0 auto; max-width: 150px; height: auto;">
-    <h1>КИНОЛОЖКО ДРУЖЕСТВО ХАРМАНЛИ</h1>
-    <h2>CAC Харманли 06.04.2025</h2>
-    <div class="subheading">Заявка за участие</div>
+    <div class="container">
+        <div class="header">
+            <img src="Logo/logo.jpg" alt="logo" class="logo">
+            <h1>КИНОЛОЖКО ДРУЖЕСТВО ХАРМАНЛИ</h1>
+            <h2>CAC Харманли 06.04.2025</h2>
+            <div class="subheading">Заявка за участие</div>
+        </div>
 
-    <form id="registrationForm" action="/submit" method="post" enctype="multipart/form-data">
-        <h2>Данни на собственика</h2>
+        <form id="registrationForm" action="/submit" method="post" enctype="multipart/form-data">
+            <div class="form-section">
+                <h2>Данни на собственика</h2>
+                
+                <div class="form-group">
+                    <label class="required-field" for="ownerName">Име и фамилия</label>
+                    <input type="text" id="ownerName" name="owner" required>
+                </div>
 
-        <label for="ownerName">Име и фамилия *</label>
-        <input type="text" id="ownerName" name="owner" required>
+                <div class="form-group">
+                    <label class="required-field" for="email">E-mail</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
 
-        <label for="email">E-mail *</label>
-        <input type="email" id="email" name="email" required>
+                <div class="form-group">
+                    <label for="address">Адрес</label>
+                    <input type="text" id="address" name="address">
+                </div>
 
-        <label for="address">Адрес (не е задължителен)</label>
-        <input type="text" id="address" name="address">
+                <div class="form-group">
+                    <label class="required-field" for="phone">Телефон</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+            </div>
 
-        <label for="phone">Телефон *</label>
-        <input type="tel" id="phone" name="phone" required>
+            <div class="form-section">
+                <h2>Данни на кучето</h2>
 
-        <h2>Данни на кучето</h2>
+                <div class="form-group">
+                    <label class="required-field" for="name">Име на кучето</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
 
-        <label for="name">Име на кучето *</label>
-        <input type="text" id="name" name="name" required>
+                <div class="form-group">
+                    <label class="required-field" for="breed">Порода</label>
+                    <input type="text" id="breed" name="breed" required>
+                </div>
 
-        <label for="breed">Порода *</label>
-        <input type="text" id="breed" name="breed" required>
+                <div class="form-group">
+                    <label class="required-field" for="sex">Пол</label>
+                    <select id="sex" name="sex" required>
+                        <option value="" disabled selected>---избор---</option>
+                        <option value="male">Мъжки</option>
+                        <option value="female">Женски</option>
+                    </select>
+                </div>
 
-        <label for="sex">Пол *</label>
-        <select id="sex" name="sex" required>
-            <option value="" disabled selected>---избор---</option>
-            <option value="male">Мъжки</option>
-            <option value="female">Женски</option>
-        </select>
+                <div class="form-group">
+                    <label class="required-field" for="color">Цвят</label>
+                    <input type="text" id="color" name="color" required>
+                </div>
 
-        <label for="color">Цвят *</label>
-        <input type="text" id="color" name="color" required>
+                <div class="form-group">
+                    <label for="variety">Разновидност</label>
+                    <input type="text" id="variety" name="variety">
+                </div>
 
-        <label for="variety">Разновидност (не е задължителна)</label>
-        <input type="text" id="variety" name="variety">
+                <div class="form-group">
+                    <label class="required-field" for="father">Баща</label>
+                    <input type="text" id="father" name="father" required>
+                </div>
 
-        <label for="father">Баща *</label>
-        <input type="text" id="father" name="father" required>
+                <div class="form-group">
+                    <label class="required-field" for="mother">Майка</label>
+                    <input type="text" id="mother" name="mother" required>
+                </div>
 
-        <label for="mother">Майка *</label>
-        <input type="text" id="mother" name="mother" required>
+                <div class="form-group">
+                    <label class="required-field" for="regnumber">№ Племенна книга</label>
+                    <input type="text" id="regnumber" name="regnumber" required>
+                </div>
 
-        <label for="regnumber">№ Племенна книга *</label>
-        <input type="text" id="regnumber" name="regnumber" required>
+                <div class="form-group">
+                    <label class="required-field" for="microchip">№ Микрочип</label>
+                    <input type="text" id="microchip" name="microchip" required>
+                </div>
 
-        <label for="microchip">№ Микрочип *</label>
-        <input type="text" id="microchip" name="microchip" required>
+                <div class="form-group">
+                    <label class="required-field" for="breeder">Производител</label>
+                    <input type="text" id="breeder" name="breeder" required>
+                </div>
 
-        <label for="pedigree">Родословие *</label>
-        <input type="file" id="pedigree" name="pedigree" accept="image/*" required>
+                <div class="form-group">
+                    <label class="required-field" for="birthdate">Дата на раждане</label>
+                    <input type="date" id="birthdate" name="birthdate" required>
+                </div>
 
-        <label for="breeder">Производител *</label>
-        <input type="text" id="breeder" name="breeder" required>
+                <div class="form-group">
+                    <label class="required-field" for="class">Клас</label>
+                    <select id="class" name="class" required>
+                        <option value="" disabled selected>---избор---</option>
+                        <option value="baby">Бебе (от 3 до 6 месеца)</option>
+                        <option value="puppy">Подрастващи (от 6 до 9 месеца)</option>
+                        <option value="junior">Млади (от 9 до 18 месеца)</option>
+                        <option value="intermedia">Междинен (от 15 до 24 месеца)</option>
+                        <option value="open">Отворен (над 15 месеца)</option>
+                        <option value="working">Работен (над 15 месеца)</option>
+                        <option value="champion">Шампион (над 15 месеца)</option>
+                        <option value="veteran">Ветерани (Над 8 години)</option>
+                    </select>
+                </div>
+            </div>
 
-        <label for="birthdate">Дата на раждане *</label>
-        <input type="date" id="birthdate" name="birthdate" required>
+            <div class="form-section">
+                <h2>Документи</h2>
+                
+                <div class="form-group">
+                    <label class="required-field" for="pedigree">Родословие</label>
+                    <input type="file" id="pedigree" name="pedigree" accept="image/*" required>
+                </div>
 
-        <label for="class">Клас *</label>
-        <select id="class" name="class" required>
-            <option value="" disabled selected>---избор---</option>
-            <option value="baby">Бебе (от 3 до 6 месеца)</option>
-            <option value="puppy">Подрастващи (от 6 до 9 месеца)</option>
-            <option value="junior">Млади (от 9 до 18 месеца)</option>
-            <option value="intermedia">Междинен (от 15 до 24 месеца)</option>
-            <option value="open">Отворен (над 15 месеца)</option>
-            <option value="working">Работен (над 15 месеца)</option>
-            <option value="champion">Шампион (над 15 месеца)</option>
-            <option value="veteran">Ветерани (Над 8 години)</option>
-        </select>
+                <div class="form-group">
+                    <label class="required-field" for="payment">Снимка от наложен платеж</label>
+                    <input type="file" id="payment" name="payment" accept="image/*" required>
+                </div>
+            </div>
 
-        <label for="payment">СНИМКА ОТ НАЛОЖЕН ПЛАТЕЖ *</label>
-        <input type="file" id="payment" name="payment" accept="image/*" required>
-
-        <input type="submit" value="Заявка за участие1">
-    </form>
+            <button type="submit" class="submit-btn">Изпрати заявка</button>
+        </form>
+    </div>
 </body>
 </html>
