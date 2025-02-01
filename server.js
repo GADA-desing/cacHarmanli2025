@@ -216,7 +216,36 @@ E-mail: ${formData.email}
     fs.unlinkSync(jsonPath);
 
     console.log('Успешно качени файлове в:', cloudinaryFolder);
-    res.send('Данните са изпратени успешно! ✅');
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            .success-message {
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background: rgba(39, 174, 96, 0.9);
+              color: white;
+              padding: 20px;
+              border-radius: 8px;
+              text-align: center;
+              font-family: Arial, sans-serif;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="success-message">Данните са изпратени успешно! ✅</div>
+          <script>
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 3000);
+          </script>
+        </body>
+      </html>
+    `);
 
   } catch (error) {
     // Подробно логване на грешката
