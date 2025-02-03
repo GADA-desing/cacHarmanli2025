@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const crypto = require('crypto');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -18,21 +19,34 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRET
 });
 
+// ========== НОВО: Генериране на nonce ==========
+function generateNonce() {
+  return crypto.randomBytes(16).toString('base64');  // Генериране на случайно nonce
+}
+
 // ========== НОВО: Конфигурация за сигурност ==========
+app.use((req, res, next) => {
+  const nonce = generateNonce();  // Генерираме уникално nonce за всяка заявка
+
+  res.locals.nonce = nonce;  // Записваме nonce в локални променливи, за да го използваме в HTML
+
+  res.setHeader('Content-Security-Policy', `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}'; 
+    style-src 'self' 'nonce-${nonce}' 'unsafe-inline';  // Разрешаваме inline стилове само с правилния nonce
+    img-src 'self' data: https://res.cloudinary.com;
+    connect-src 'self' https://api.cloudinary.com;
+    font-src 'self' data: https://fonts.gstatic.com;
+    object-src 'none';
+    upgrade-insecure-requests;
+  `);
+
+  next();
+});
+
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], 
-        styleSrc: ["'self'", "'unsafe-inline'"], 
-        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
-        connectSrc: ["'self'", "https://api.cloudinary.com"],
-        fontSrc: ["'self'", "data:"],
-        objectSrc: ["'none'"],
-        upgradeInsecureRequests: []
-      }
-    },
+    contentSecurityPolicy: false, // Изключваме CSP, защото вече го конфигурираме ръчно
     crossOriginResourcePolicy: { policy: "same-site" },
     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
   })
@@ -234,29 +248,19 @@ E-mail: ${formData.email}
       },
       "Прикачени файлове": {
         "Родословие": files.pedigree[0].path,
-        "Платежен документ": files.payment[0].path
+        "Платежен документ": files.payment[0].path,
+        "Текстов файл": txtUpload.secure_url
       }
     };
 
-    const jsonPath = path.join(__dirname, 'temp.json');
-    fs.writeFileSync(jsonPath, JSON.stringify(submission, null, 2));
-
-    const jsonUpload = await cloudinary.uploader.upload(jsonPath, {
-      folder: cloudinaryFolder,
-      resource_type: 'auto',
-      public_id: `${owner}_data`
-    });
-
-    fs.unlinkSync(jsonPath);
-
-    console.log('Успешно качени файлове в:', cloudinaryFolder);
+    // Показваме успешно съобщение
     res.send(`
       <!DOCTYPE html>
-      <html>
+      <html lang="bg">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
+          <style nonce="${res.locals.nonce}">
             .success-message {
               position: fixed;
               top: 50%;
@@ -291,37 +295,12 @@ E-mail: ${formData.email}
         </body>
       </html>
     `);
-
-  } catch (error) {
-    // Подробно логване на грешката
-    console.error('Детайли за грешката:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    res.status(500).send('Грешка при обработка на заявката');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Възникна грешка при обработката на формата.');
   }
 });
 
-// Функция за поддържане на сървъра активен
-function keepAlive() {
-    app.get('/ping', (req, res) => {
-        res.send('pong');
-    });
-
-    // Изпращаме ping на всеки 14 минути
-    setInterval(() => {
-        const https = require('https');
-        https.get('https://cacharmanli2025.onrender.com//ping', (resp) => {
-            resp.on('data', () => {});
-            resp.on('end', () => console.log('Ping успешен'));
-        }).on('error', (err) => {
-            console.log('Ping грешка:', err.message);
-        });
-    }, 14 * 60 * 1000);
-}
-
 app.listen(port, () => {
-    console.log(`Сървърът работи на http://localhost:${port}`);
-    keepAlive(); // Стартираме функцията за поддържане на активност
+  console.log(`Server running on port ${port}`);
 });
