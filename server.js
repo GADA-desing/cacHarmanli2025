@@ -30,13 +30,15 @@ async function getNextFolderNumber() {
       })
       .filter(num => !isNaN(num) && num > 0);
 
-    // Ако няма папки, започваме от 1
+    // Сортиране на числата и намиране на следващия номер
+    numbers.sort((a, b) => a - b);
     return numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
   } catch (error) {
     console.error('Грешка при извличане на папки:', error);
     return 1; // Ако има грешка, започваме от 1
   }
 }
+
 
 // Конфигурация за Cloudinary Storage
 const storage = new CloudinaryStorage({
