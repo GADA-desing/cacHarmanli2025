@@ -11,14 +11,14 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ========== Cloudinary конфигурация ========== 
+// ========== Cloudinary конфигурация ==========
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
   api_secret: process.env.CLOUD_API_SECRET
 });
 
-// ========== НОВО: Конфигурация за сигурност ========== 
+// ========== НОВО: Конфигурация за сигурност ==========
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -26,27 +26,27 @@ app.use(
         defaultSrc: ["'self'"], // Разрешаваме само ресурси от същия източник
         scriptSrc: [
           "'self'", // Разрешаваме скриптове от същия източник
-          "'nonce-<random_nonce>'", // Използваме nonce за inline скриптове
+          "'nonce-<random_nonce>'", // Използваме nonce за inline скриптове, ако е необходимо
           "https://cdnjs.cloudflare.com", // Добавяме доверени CDN адреси (ако използваме външни библиотеки)
-        ],
+        ], 
         styleSrc: [
           "'self'", 
-          "'nonce-<random_nonce>'", // Добавяме nonce за inline стилове
+          "'nonce-<random_nonce>'", // Добавяме nonce за inline стилове, ако е необходимо
           "https://fonts.googleapis.com", // За външни стилове
-        ],
+        ], 
         imgSrc: [
           "'self'", 
           "data:", 
           "https://res.cloudinary.com", // Cloudinary изображения
-        ],
+        ], 
         connectSrc: [
           "'self'", 
           "https://api.cloudinary.com", // Свързване към Cloudinary API
-        ],
+        ], 
         fontSrc: [
           "'self'", 
           "https://fonts.gstatic.com", // Добавяме разрешение за външни шрифтове
-        ],
+        ], 
         objectSrc: ["'none'"], // Не разрешаваме използването на обекти
         mediaSrc: ["'self'"], // Разрешаваме медиа ресурси само от същия източник
         frameSrc: ["'none'"], // Не разрешаваме вграждане в iframe
@@ -60,13 +60,6 @@ app.use(
   })
 );
 
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=(), payment=()');
-  next();
-});
 
 // ========== Оригинална функционалност (без съкращения) ==========
 
