@@ -7,31 +7,30 @@ const fs = require('fs');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const crypto = require('crypto'); // Добавяме crypto за генериране на nonce
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ========== Cloudinary конфигурация ========== 
+// ========== Cloudinary конфигурация ==========
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
   api_secret: process.env.CLOUD_API_SECRET
 });
 
-// ========== НОВО: Конфигурация за сигурност ========== 
+// ========== НОВО: Конфигурация за сигурност ==========
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"], // Разрешаваме само ресурси от текущия домейн
-        scriptSrc: ["'self'", "https://cdnjs.cloudflare.com"], // Позволяваме само скриптове от доверени източници
-        styleSrc: ["'self'", "'nonce-<random_nonce>'"], // Разрешаваме стилове само от доверени източници и с nonce
-        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"], // Разрешаваме изображения само от текущия домейн и Cloudinary
-        connectSrc: ["'self'", "https://api.cloudinary.com"], // Позволяваме само връзки с Cloudinary API
-        fontSrc: ["'self'", "https://fonts.googleapis.com"], // Разрешаваме шрифтове само от доверени източници
-        objectSrc: ["'none'"], // Не разрешаваме обекти
-        upgradeInsecureRequests: [], // Поддържаме само безопасни протоколи (https)
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], 
+        styleSrc: ["'self'", "'unsafe-inline'"], 
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+        connectSrc: ["'self'", "https://api.cloudinary.com"],
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: []
       }
     },
     crossOriginResourcePolicy: { policy: "same-site" },
@@ -47,11 +46,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Генериране на уникален nonce за всеки отговор
-app.use((req, res, next) => {
-  res.locals.nonce = crypto.randomBytes(16).toString('base64'); // Генерираме nonce
-  next();
-});
+// ========== Оригинална функционалност (без съкращения) ==========
 
 // Функция за намиране на следващия номер на папка
 async function getNextFolderNumber() {
@@ -130,6 +125,21 @@ app.post('/submit', uploadCloudinary.fields([
     const owner = formData.owner.trim().replace(/\s+/g, '_');
     const cloudinaryFolder = `submissions/${req.folderNumber}.${owner}`;
 
+    // Използваме правилните имена на полетата от формата
+    const dogName = formData.name || '';
+    
+    // Форматиране на датата
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('bg-BG', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit'
+      });
+    };
+    const birthDate = formatDate(formData.birthdate);
+    
     // Превод на пола
     const gender = formData.sex === 'male' ? 'Мъжки' : 
                   formData.sex === 'female' ? 'Женски' : '';
@@ -146,11 +156,45 @@ app.post('/submit', uploadCloudinary.fields([
       'veteran': 'Ветерани (Над 8 години)'
     };
     const dogClass = classTranslations[formData.class] || '';
+    
+    const color = formData.color || '';
+    const variety = formData.variety || '';
+    const father = formData.father || '';
+    const mother = formData.mother || '';
+    const regnumber = formData.regnumber || '';
+    const microchip = formData.microchip || '';
+    const breeder = formData.breeder || '';
+    const address = formData.address || '';
 
-    const birthDate = formData.birthdate ? new Date(formData.birthdate).toLocaleDateString('bg-BG') : '';
+    // Създаване на текстово съдържание
+    const textContent = `
+ДАННИ НА СОБСТВЕНИКА
+-------------------
+Име и фамилия: ${formData.owner}
+E-mail: ${formData.email}
+Телефон: ${formData.phone}
+Адрес: ${address}
 
-    // Пример за създаване на съдържание
-    const textContent = `ДАННИ НА СОБСТВЕНИКА\n-------------------\nИме и фамилия: ${formData.owner}\nE-mail: ${formData.email}`;
+ДАННИ НА КУЧЕТО
+--------------
+Име на кучето: ${dogName}
+Порода: ${formData.breed}
+Пол: ${gender}
+Цвят: ${color}
+Разновидност: ${variety}
+Баща: ${father}
+Майка: ${mother}
+№ Племенна книга: ${regnumber}
+№ Микрочип: ${microchip}
+Производител: ${breeder}
+Клас: ${dogClass}
+Дата на раждане: ${birthDate}
+
+ПРИКАЧЕНИ ФАЙЛОВЕ
+----------------
+Родословие: ${files.pedigree[0].path}
+Платежен документ: ${files.payment[0].path}
+    `.trim();
 
     // Записване на временен текстов файл
     const txtPath = path.join(__dirname, 'temp.txt');
@@ -170,7 +214,27 @@ app.post('/submit', uploadCloudinary.fields([
     const submission = {
       "Данни на собственика": {
         "Име и фамилия": formData.owner,
-        "E-mail": formData.email
+        "E-mail": formData.email,
+        "Телефон": formData.phone,
+        "Адрес": address
+      },
+      "Данни на кучето": {
+        "Име на кучето": dogName,
+        "Порода": formData.breed,
+        "Пол": gender,
+        "Цвят": color,
+        "Разновидност": variety,
+        "Баща": father,
+        "Майка": mother,
+        "№ Племенна книга": regnumber,
+        "№ Микрочип": microchip,
+        "Производител": breeder,
+        "Клас": dogClass,
+        "Дата на раждане": birthDate
+      },
+      "Прикачени файлове": {
+        "Родословие": files.pedigree[0].path,
+        "Платежен документ": files.payment[0].path
       }
     };
 
@@ -186,15 +250,13 @@ app.post('/submit', uploadCloudinary.fields([
     fs.unlinkSync(jsonPath);
 
     console.log('Успешно качени файлове в:', cloudinaryFolder);
-
-    // Връщане на отговор с nonce
     res.send(`
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style nonce="${res.locals.nonce}">
+          <style>
             .success-message {
               position: fixed;
               top: 50%;
@@ -221,7 +283,7 @@ app.post('/submit', uploadCloudinary.fields([
         </head>
         <body>
           <div class="success-message">Данните са изпратени успешно! ✅</div>
-          <script nonce="${res.locals.nonce}">
+          <script>
             setTimeout(() => {
               window.location.href = '/';
             }, 3000);
@@ -231,29 +293,35 @@ app.post('/submit', uploadCloudinary.fields([
     `);
 
   } catch (error) {
-    console.error('Грешка при обработка на заявката:', error);
+    // Подробно логване на грешката
+    console.error('Детайли за грешката:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).send('Грешка при обработка на заявката');
   }
 });
 
 // Функция за поддържане на сървъра активен
 function keepAlive() {
-  app.get('/ping', (req, res) => {
-    res.send('pong');
-  });
-
-  setInterval(() => {
-    const https = require('https');
-    https.get('https://cacharmanli2025.onrender.com//ping', (resp) => {
-      resp.on('data', () => {});
-      resp.on('end', () => console.log('Ping успешен'));
-    }).on('error', (err) => {
-      console.log('Ping грешка:', err.message);
+    app.get('/ping', (req, res) => {
+        res.send('pong');
     });
-  }, 14 * 60 * 1000);
+
+    // Изпращаме ping на всеки 14 минути
+    setInterval(() => {
+        const https = require('https');
+        https.get('https://cacharmanli2025.onrender.com//ping', (resp) => {
+            resp.on('data', () => {});
+            resp.on('end', () => console.log('Ping успешен'));
+        }).on('error', (err) => {
+            console.log('Ping грешка:', err.message);
+        });
+    }, 14 * 60 * 1000);
 }
 
 app.listen(port, () => {
-  console.log(`Сървърът работи на http://localhost:${port}`);
-  keepAlive();
+    console.log(`Сървърът работи на http://localhost:${port}`);
+    keepAlive(); // Стартираме функцията за поддържане на активност
 });
