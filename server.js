@@ -23,43 +23,28 @@ app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"], // Разрешаваме само ресурси от същия източник
-        scriptSrc: [
-          "'self'", // Разрешаваме скриптове от същия източник
-          "'nonce-<random_nonce>'", // Използваме nonce за inline скриптове, ако е необходимо
-          "https://cdnjs.cloudflare.com", // Добавяме доверени CDN адреси (ако използваме външни библиотеки)
-        ], 
-        styleSrc: [
-          "'self'", 
-          "'nonce-<random_nonce>'", // Добавяме nonce за inline стилове, ако е необходимо
-          "https://fonts.googleapis.com", // За външни стилове
-        ], 
-        imgSrc: [
-          "'self'", 
-          "data:", 
-          "https://res.cloudinary.com", // Cloudinary изображения
-        ], 
-        connectSrc: [
-          "'self'", 
-          "https://api.cloudinary.com", // Свързване към Cloudinary API
-        ], 
-        fontSrc: [
-          "'self'", 
-          "https://fonts.gstatic.com", // Добавяме разрешение за външни шрифтове
-        ], 
-        objectSrc: ["'none'"], // Не разрешаваме използването на обекти
-        mediaSrc: ["'self'"], // Разрешаваме медиа ресурси само от същия източник
-        frameSrc: ["'none'"], // Не разрешаваме вграждане в iframe
-        upgradeInsecureRequests: [], // Автоматично обновяване на несигурни заявки
-        baseUri: ["'self'"], // Разрешаваме базовия URI само от същия източник
-        formAction: ["'self'"], // Разрешаваме само изпращане на формуляри от същия източник
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], 
+        styleSrc: ["'self'", "'unsafe-inline'"], 
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+        connectSrc: ["'self'", "https://api.cloudinary.com"],
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: []
       }
     },
-    crossOriginResourcePolicy: { policy: "same-origin" }, // За по-сигурна политика на ресурси
+    crossOriginResourcePolicy: { policy: "same-site" },
     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
   })
 );
 
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=(), payment=()');
+  next();
+});
 
 // ========== Оригинална функционалност (без съкращения) ==========
 
