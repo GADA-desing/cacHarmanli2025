@@ -11,29 +11,51 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ========== Cloudinary конфигурация ==========
+// ========== Cloudinary конфигурация ========== 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
   api_secret: process.env.CLOUD_API_SECRET
 });
 
-// ========== НОВО: Конфигурация за сигурност ==========
+// ========== НОВО: Конфигурация за сигурност ========== 
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"], 
-        styleSrc: ["'self'", "'unsafe-inline'"], 
-        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
-        connectSrc: ["'self'", "https://api.cloudinary.com"],
-        fontSrc: ["'self'", "data:"],
-        objectSrc: ["'none'"],
-        upgradeInsecureRequests: []
+        defaultSrc: ["'self'"], // Разрешаваме само ресурси от същия източник
+        scriptSrc: [
+          "'self'", // Разрешаваме скриптове от същия източник
+          "'nonce-<random_nonce>'", // Използваме nonce за inline скриптове
+          "https://cdnjs.cloudflare.com", // Добавяме доверени CDN адреси (ако използваме външни библиотеки)
+        ],
+        styleSrc: [
+          "'self'", 
+          "'nonce-<random_nonce>'", // Добавяме nonce за inline стилове
+          "https://fonts.googleapis.com", // За външни стилове
+        ],
+        imgSrc: [
+          "'self'", 
+          "data:", 
+          "https://res.cloudinary.com", // Cloudinary изображения
+        ],
+        connectSrc: [
+          "'self'", 
+          "https://api.cloudinary.com", // Свързване към Cloudinary API
+        ],
+        fontSrc: [
+          "'self'", 
+          "https://fonts.gstatic.com", // Добавяме разрешение за външни шрифтове
+        ],
+        objectSrc: ["'none'"], // Не разрешаваме използването на обекти
+        mediaSrc: ["'self'"], // Разрешаваме медиа ресурси само от същия източник
+        frameSrc: ["'none'"], // Не разрешаваме вграждане в iframe
+        upgradeInsecureRequests: [], // Автоматично обновяване на несигурни заявки
+        baseUri: ["'self'"], // Разрешаваме базовия URI само от същия източник
+        formAction: ["'self'"], // Разрешаваме само изпращане на формуляри от същия източник
       }
     },
-    crossOriginResourcePolicy: { policy: "same-site" },
+    crossOriginResourcePolicy: { policy: "same-origin" }, // За по-сигурна политика на ресурси
     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
   })
 );
