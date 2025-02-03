@@ -1,4 +1,7 @@
+require('dotenv').config(); // Добавете това най-отгоре
+
 const express = require('express');
+const helmet = require('helmet'); // Добавен пакет
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -8,12 +11,42 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Cloudinary конфигурация
+// ========== Cloudinary конфигурация ==========
 cloudinary.config({
-  cloud_name: 'dhhlacol1',
-  api_key: '359592344316647',
-  api_secret: 'd9LIHVmoBnqXqPRnJYkEs-vqjv8'
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET
 });
+
+// ========== НОВО: Конфигурация за сигурност ==========
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], 
+        styleSrc: ["'self'", "'unsafe-inline'"], 
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+        connectSrc: ["'self'", "https://api.cloudinary.com"],
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: []
+      }
+    },
+    crossOriginResourcePolicy: { policy: "same-site" },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
+  })
+);
+
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=(), payment=()');
+  next();
+});
+
+// ========== Оригинална функционалност (без съкращения) ==========
 
 // Функция за намиране на следващия номер на папка
 async function getNextFolderNumber() {
@@ -38,7 +71,6 @@ async function getNextFolderNumber() {
     return 1; // Ако има грешка, започваме от 1
   }
 }
-
 
 // Конфигурация за Cloudinary Storage
 const storage = new CloudinaryStorage({
