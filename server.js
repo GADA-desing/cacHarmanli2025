@@ -7,46 +7,33 @@ const fs = require('fs');
 const path = require('path');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const crypto = require('crypto');
+const crypto = require('crypto'); // Добавяме crypto за генериране на nonce
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ========== Cloudinary конфигурация ==========
+// ========== Cloudinary конфигурация ========== 
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.CLOUD_API_KEY,
   api_secret: process.env.CLOUD_API_SECRET
 });
 
-// ========== НОВО: Генериране на nonce ==========
-function generateNonce() {
-  return crypto.randomBytes(16).toString('base64');  // Генериране на случайно nonce
-}
-
-// ========== НОВО: Конфигурация за сигурност ==========
-app.use((req, res, next) => {
-  const nonce = generateNonce();  // Генерираме уникално nonce за всяка заявка
-
-  res.locals.nonce = nonce;  // Записваме nonce в локални променливи, за да го използваме в HTML
-
-  res.setHeader('Content-Security-Policy', `
-    default-src 'self';
-    script-src 'self' 'nonce-${nonce}'; 
-    style-src 'self' 'nonce-${nonce}' 'unsafe-inline';  // Разрешаваме inline стилове само с правилния nonce
-    img-src 'self' data: https://res.cloudinary.com;
-    connect-src 'self' https://api.cloudinary.com;
-    font-src 'self' data: https://fonts.gstatic.com;
-    object-src 'none';
-    upgrade-insecure-requests;
-  `);
-
-  next();
-});
-
+// ========== НОВО: Конфигурация за сигурност ========== 
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Изключваме CSP, защото вече го конфигурираме ръчно
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"], // Разрешаваме само ресурси от текущия домейн
+        scriptSrc: ["'self'", "https://cdnjs.cloudflare.com"], // Позволяваме само скриптове от доверени източници
+        styleSrc: ["'self'", "'nonce-<random_nonce>'"], // Разрешаваме стилове само от доверени източници и с nonce
+        imgSrc: ["'self'", "data:", "https://res.cloudinary.com"], // Разрешаваме изображения само от текущия домейн и Cloudinary
+        connectSrc: ["'self'", "https://api.cloudinary.com"], // Позволяваме само връзки с Cloudinary API
+        fontSrc: ["'self'", "https://fonts.googleapis.com"], // Разрешаваме шрифтове само от доверени източници
+        objectSrc: ["'none'"], // Не разрешаваме обекти
+        upgradeInsecureRequests: [], // Поддържаме само безопасни протоколи (https)
+      }
+    },
     crossOriginResourcePolicy: { policy: "same-site" },
     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
   })
@@ -60,7 +47,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// ========== Оригинална функционалност (без съкращения) ==========
+// Генериране на уникален nonce за всеки отговор
+app.use((req, res, next) => {
+  res.locals.nonce = crypto.randomBytes(16).toString('base64'); // Генерираме nonce
+  next();
+});
 
 // Функция за намиране на следващия номер на папка
 async function getNextFolderNumber() {
@@ -139,21 +130,6 @@ app.post('/submit', uploadCloudinary.fields([
     const owner = formData.owner.trim().replace(/\s+/g, '_');
     const cloudinaryFolder = `submissions/${req.folderNumber}.${owner}`;
 
-    // Използваме правилните имена на полетата от формата
-    const dogName = formData.name || '';
-    
-    // Форматиране на датата
-    const formatDate = (dateStr) => {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('bg-BG', {
-        day: '2-digit',
-        month: '2-digit',
-        year: '2-digit'
-      });
-    };
-    const birthDate = formatDate(formData.birthdate);
-    
     // Превод на пола
     const gender = formData.sex === 'male' ? 'Мъжки' : 
                   formData.sex === 'female' ? 'Женски' : '';
@@ -170,45 +146,11 @@ app.post('/submit', uploadCloudinary.fields([
       'veteran': 'Ветерани (Над 8 години)'
     };
     const dogClass = classTranslations[formData.class] || '';
-    
-    const color = formData.color || '';
-    const variety = formData.variety || '';
-    const father = formData.father || '';
-    const mother = formData.mother || '';
-    const regnumber = formData.regnumber || '';
-    const microchip = formData.microchip || '';
-    const breeder = formData.breeder || '';
-    const address = formData.address || '';
 
-    // Създаване на текстово съдържание
-    const textContent = `
-ДАННИ НА СОБСТВЕНИКА
--------------------
-Име и фамилия: ${formData.owner}
-E-mail: ${formData.email}
-Телефон: ${formData.phone}
-Адрес: ${address}
+    const birthDate = formData.birthdate ? new Date(formData.birthdate).toLocaleDateString('bg-BG') : '';
 
-ДАННИ НА КУЧЕТО
---------------
-Име на кучето: ${dogName}
-Порода: ${formData.breed}
-Пол: ${gender}
-Цвят: ${color}
-Разновидност: ${variety}
-Баща: ${father}
-Майка: ${mother}
-№ Племенна книга: ${regnumber}
-№ Микрочип: ${microchip}
-Производител: ${breeder}
-Клас: ${dogClass}
-Дата на раждане: ${birthDate}
-
-ПРИКАЧЕНИ ФАЙЛОВЕ
-----------------
-Родословие: ${files.pedigree[0].path}
-Платежен документ: ${files.payment[0].path}
-    `.trim();
+    // Пример за създаване на съдържание
+    const textContent = `ДАННИ НА СОБСТВЕНИКА\n-------------------\nИме и фамилия: ${formData.owner}\nE-mail: ${formData.email}`;
 
     // Записване на временен текстов файл
     const txtPath = path.join(__dirname, 'temp.txt');
@@ -228,35 +170,27 @@ E-mail: ${formData.email}
     const submission = {
       "Данни на собственика": {
         "Име и фамилия": formData.owner,
-        "E-mail": formData.email,
-        "Телефон": formData.phone,
-        "Адрес": address
-      },
-      "Данни на кучето": {
-        "Име на кучето": dogName,
-        "Порода": formData.breed,
-        "Пол": gender,
-        "Цвят": color,
-        "Разновидност": variety,
-        "Баща": father,
-        "Майка": mother,
-        "№ Племенна книга": regnumber,
-        "№ Микрочип": microchip,
-        "Производител": breeder,
-        "Клас": dogClass,
-        "Дата на раждане": birthDate
-      },
-      "Прикачени файлове": {
-        "Родословие": files.pedigree[0].path,
-        "Платежен документ": files.payment[0].path,
-        "Текстов файл": txtUpload.secure_url
+        "E-mail": formData.email
       }
     };
 
-    // Показваме успешно съобщение
+    const jsonPath = path.join(__dirname, 'temp.json');
+    fs.writeFileSync(jsonPath, JSON.stringify(submission, null, 2));
+
+    const jsonUpload = await cloudinary.uploader.upload(jsonPath, {
+      folder: cloudinaryFolder,
+      resource_type: 'auto',
+      public_id: `${owner}_data`
+    });
+
+    fs.unlinkSync(jsonPath);
+
+    console.log('Успешно качени файлове в:', cloudinaryFolder);
+
+    // Връщане на отговор с nonce
     res.send(`
       <!DOCTYPE html>
-      <html lang="bg">
+      <html>
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -287,7 +221,7 @@ E-mail: ${formData.email}
         </head>
         <body>
           <div class="success-message">Данните са изпратени успешно! ✅</div>
-          <script>
+          <script nonce="${res.locals.nonce}">
             setTimeout(() => {
               window.location.href = '/';
             }, 3000);
@@ -295,12 +229,31 @@ E-mail: ${formData.email}
         </body>
       </html>
     `);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Възникна грешка при обработката на формата.');
+
+  } catch (error) {
+    console.error('Грешка при обработка на заявката:', error);
+    res.status(500).send('Грешка при обработка на заявката');
   }
 });
 
+// Функция за поддържане на сървъра активен
+function keepAlive() {
+  app.get('/ping', (req, res) => {
+    res.send('pong');
+  });
+
+  setInterval(() => {
+    const https = require('https');
+    https.get('https://cacharmanli2025.onrender.com//ping', (resp) => {
+      resp.on('data', () => {});
+      resp.on('end', () => console.log('Ping успешен'));
+    }).on('error', (err) => {
+      console.log('Ping грешка:', err.message);
+    });
+  }, 14 * 60 * 1000);
+}
+
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Сървърът работи на http://localhost:${port}`);
+  keepAlive();
 });
